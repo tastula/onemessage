@@ -1,0 +1,116 @@
+#!/usr/bin/python3
+import os
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("AppIndicator3", "0.1")
+
+from gi.repository import Gtk as gtk
+from gi.repository import GLib as glib
+from gi.repository import AppIndicator3 as appindicator
+from gi.repository import GdkPixbuf as pixbuf
+
+ICON_FOLDER = "/home/valtteri/Koodi/onemessage/icons"
+APP_NAME = "One Message"
+
+class App:
+    def __init__(self):
+        self.indicator = self.build_indicator()
+        self.set_message("Write your message")
+        self.show_icon = True
+
+    def build_menu(self):
+        item_text = gtk.MenuItem(label="Change message")
+        item_text.connect("activate", self.open_change)
+
+        item_quit = gtk.MenuItem(label="Quit")
+        item_quit.connect("activate", self.quit)
+
+        menu = gtk.Menu()
+        menu.append(item_text)
+        menu.append(item_quit)
+        menu.show_all()
+
+        return menu
+
+    def build_indicator(self):
+        indicator = appindicator.Indicator.new(
+            "la.tastu.onemessage",
+            # gtk.STOCK_YES,
+            # gtk.STOCK_ABOUT,
+            os.path.abspath(f"{ICON_FOLDER}/onemessage-32.svg"),
+            appindicator.IndicatorCategory.APPLICATION_STATUS
+        )
+        
+        indicator.set_status(appindicator.IndicatorStatus.ACTIVE)
+        indicator.set_menu(self.build_menu())
+        indicator.set_title(APP_NAME)
+
+        return indicator
+
+    def build_window(self):
+        window = gtk.Window(title=APP_NAME)
+        window.set_icon_list([
+            pixbuf.Pixbuf.new_from_file(f"{ICON_FOLDER}/onemessage-16.svg"),
+            pixbuf.Pixbuf.new_from_file(f"{ICON_FOLDER}/onemessage-32.svg"),
+            pixbuf.Pixbuf.new_from_file(f"{ICON_FOLDER}/onemessage-48.svg")
+        ])
+        window.set_size_request(360, 80)
+        window.set_position(gtk.WindowPosition.CENTER)
+        window.set_border_width(12)
+
+        vbox = gtk.Box(orientation=gtk.Orientation.VERTICAL, spacing=12)
+        hbox = gtk.Box(orientation=gtk.Orientation.HORIZONTAL, spacing=12)
+
+        entry = gtk.Entry()
+        entry.set_text(self.indicator.get_label().strip())
+        entry.connect("activate", lambda _: self.save_change(entry.get_text().strip(), window))
+
+        dot = gtk.Button(label="•")
+        dot.connect("clicked", lambda _: self.add_dot(entry))
+
+        toggle = gtk.Button(label="toggle icon")
+        toggle.connect("clicked", self.toggle_icon)
+
+        hbox.pack_start(dot, True, True, 0)
+        hbox.pack_start(toggle, True, True, 0)
+        vbox.pack_start(entry, True, True, 0)
+        vbox.pack_start(hbox, True, True, 0)
+        window.add(vbox)
+
+        return window
+
+    def open_change(self, _source):
+        self.build_window().show_all()
+
+    def save_change(self, text, window):
+        self.set_message(text)
+        window.close()
+
+    def set_message(self, text):
+        # Add a visually nice space between icon and label
+        self.indicator.set_label(" " + text, "")
+
+    def toggle_icon(self, _source):
+        if self.show_icon:
+            self.indicator.set_icon_full(f"{ICON_FOLDER}/nothing.svg", "transparent icon")
+        else:
+            self.indicator.set_icon_full(f"{ICON_FOLDER}/onemessage-16.svg", "visible icon")
+        self.show_icon = not self.show_icon
+
+    def add_dot(self, entry):
+        entry.set_text(entry.get_text() + "  •  ")
+        entry.grab_focus_without_selecting()
+        entry.set_position(-1)
+
+    def quit(self, _source):
+        gtk.main_quit()
+
+    def run(self):
+        glib.set_prgname("/home/valtteri/Koodi/onemessage/onemessage")
+        self.open_change(None)
+        gtk.main()
+
+
+if __name__ == "__main__":
+    app = App()
+    app.run()
