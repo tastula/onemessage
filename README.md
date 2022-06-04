@@ -18,6 +18,7 @@ Keeping it simple. Very simple.
 A bit manual for now.
 
 - clone the repository
+- install libraries `libappindicator3-1` and `libappindicator3-dev`
 - edit `Exec` and `Icon` paths in `onemessage.desktop` to match yours
 - edit `ICON_FOLDER` in `onemessage` as well
 - move the desktop entry file to `~/.local/share/applications`
